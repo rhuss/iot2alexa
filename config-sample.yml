@@ -1,0 +1,46 @@
+server:
+  # Port to use to listen to
+  port: 8443
+
+# Getting data from heat storage
+skill:
+  # Skill id
+  appid: "amzn1.ask.skill.123434-1344-2334-32432-332434"
+  path: "/echo/skill"
+  output:
+    title: "Puffer"
+    intro: "Puffer"
+    error: "Fehler"
+    text:
+      - key: temp_high
+        format: "Oben: %v Grad."
+      - key: temp_medium
+        format: "Mitte: %v Grad."
+      - key: temp_low
+        format: "Unten: %v Grad."
+      - key: temp_collector
+        format: "Kollektor: %v Grad."
+  mqtt:
+    # MQTT Host
+    host: mymqtt-broker
+    # MQTT Port (default: 183)
+    port: 1883
+    # Topic where temperature is reported
+    topic: "home/puffer"
+    auth:
+      user: "bla"
+      password: "s3cr3t!!"
+        # Key to JSON path mapping into the payload
+        mapping:
+          - key: temp_collector
+            path: ".temp_coll"
+            scale: 0.1
+          - key: temp_low
+            path: ".temp_low"
+            scale: 0.1
+          - key: temp_medium
+            path: ".temp_med"
+            scale: 0.1
+          - key: temp_high
+            path: ".temp_high"
+            scale: 0.1
