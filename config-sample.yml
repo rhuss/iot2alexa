@@ -1,3 +1,6 @@
+# Switch on debugging
+debug: true
+
 server:
   # Port to use to listen to
   port: 8443
@@ -33,14 +36,14 @@ skill:
         # Key to JSON path mapping into the payload
         mapping:
           - key: temp_collector
-            path: ".temp_coll"
+            path: "$.temp_coll"
             scale: 0.1
           - key: temp_low
-            path: ".temp_low"
+            path: "$.temp_low"
             scale: 0.1
           - key: temp_medium
-            path: ".temp_med"
+            path: "$.temp_med"
             scale: 0.1
           - key: temp_high
-            path: ".temp_high"
+            path: "$.temp_high"
             scale: 0.1

@@ -2,10 +2,10 @@ package iot2alexa
 
 import (
 	"fmt"
-	"log"
 	"strings"
 
 	alexa "github.com/mikeflynn/go-alexa/skillserver"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 
 	"github.com/rhuss/iot2alexa/pkg/output"
@@ -19,13 +19,16 @@ type BackendHandler interface {
 	Data() (map[string]interface{}, error)
 }
 
-type BackendLookup func(config *viper.Viper) BackendHandler
+type BackendLookup func(config *viper.Viper) (BackendHandler, error)
 
 func LookupBackend(config *viper.Viper) (BackendHandler, error) {
 	var found []BackendHandler
 
 	for _, lookup := range BackendLookups {
-		backendHandler := lookup(config)
+		backendHandler, err := lookup(config)
+		if err != nil {
+			return nil, err
+		}
 		if backendHandler != nil {
 			found = append(found, backendHandler)
 			return backendHandler, nil
@@ -47,8 +50,6 @@ func LookupBackend(config *viper.Viper) (BackendHandler, error) {
 	return found[0], nil
 }
 
-
-
 type AlexaHandlerFunc func(echoReq *alexa.EchoRequest, echoResp *alexa.EchoResponse)
 
 func NewAlexaHandlerFunc(handler BackendHandler, outputGenerator output.OutputGenerator) AlexaHandlerFunc {
@@ -60,7 +61,7 @@ func NewAlexaHandlerFunc(handler BackendHandler, outputGenerator output.OutputGe
 		} else {
 			msg = outputGenerator.OutputMessage(data)
 		}
-		log.Printf("Output: %s\n", msg)
+		logrus.WithField("message", msg).Info("Alexa answer")
 		echoResp.OutputSpeech(msg).Card(outputGenerator.Title(), msg)
 	}
 }

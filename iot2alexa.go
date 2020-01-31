@@ -2,16 +2,16 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"strconv"
 
 	alexa "github.com/mikeflynn/go-alexa/skillserver"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
 	"github.com/rhuss/iot2alexa/pkg/iot2alexa"
-	_ "github.com/rhuss/iot2alexa/pkg/mqtt"  // for registering the backend
+	_ "github.com/rhuss/iot2alexa/pkg/mqtt" // for registering the backend
 	"github.com/rhuss/iot2alexa/pkg/output"
 )
 
@@ -34,13 +34,14 @@ func init() {
 	cobra.OnInitialize(initConfig)
 
 	RootCmd.PersistentFlags().StringVarP(&cfgFile, "config", "c", "", "configuration file. This argument is mandatory")
+	RootCmd.PersistentFlags().Bool("log-json",false,"output own logging in JSON format")
 	RootCmd.MarkFlagRequired("config")
 }
 
 // initConfig reads in config file and ENV variables if set.
 func initConfig() {
 	if cfgFile == "" {
-		log.Fatalf("no configuration file given. Please add one with --config")
+		logrus.Fatalf("no configuration file given. Please add one with --config")
 	}
 
 	viper.SetConfigFile(cfgFile)
@@ -48,7 +49,18 @@ func initConfig() {
 	viper.SetConfigType("yaml")
 
 	if err := viper.ReadInConfig(); err != nil {
-		log.Fatalf("cannot read config file %s", cfgFile)
+		logrus.WithField("configfile", cfgFile).Fatalf("cannot read config file")
+	}
+
+	if viper.GetBool("debug") {
+	 	logrus.SetLevel(logrus.DebugLevel)
+	} else {
+		logrus.SetLevel(logrus.InfoLevel)
+	}
+	logAsJson,_ :=  RootCmd.Flags().GetBool("log-json")
+	if logAsJson {
+		// Log as JSON instead of the default ASCII formatter.
+		logrus.SetFormatter(&logrus.JSONFormatter{})
 	}
 }
 
@@ -61,7 +73,7 @@ func main() {
 
 // Command loop for running the skill server
 func alexaRun(cmd *cobra.Command, args []string) error {
-	skillConfig := viper.Sub("skill")
+    skillConfig := viper.Sub("skill")
 
 	// Validate and error out if an error occurs
 	err := validateSkillConfig(skillConfig)
@@ -83,8 +95,11 @@ func alexaRun(cmd *cobra.Command, args []string) error {
 
 	// Server parameters for starting up the HTTP serve
 	port, verifyAwsCerts := serverParams()
-	log.Printf("Alexa Skillserver listening on port %s", port)
-	alexa.Run(applications, port, !verifyAwsCerts)
+	alexa.SetVerifyAWSCerts(verifyAwsCerts)
+	logrus.WithField("port", port).
+		WithField("verifyAwsCerts", verifyAwsCerts).
+		Info("Alexa skillserver is listening")
+	alexa.Run(applications, port)
 	return nil
 }
 
